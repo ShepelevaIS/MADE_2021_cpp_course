@@ -38,4 +38,4 @@ jobs:
           path: main.out
       - name: test_with_valgrind
         run: valgrind --tool=memcheck --leak-check=yes ./tests/test_matrix_calculator
-        working-directory: build
+        working-directory: home_task_2/build
