@@ -19,7 +19,6 @@ int main() {
   Matrix<int> matrix({{0, 2, 3}, {4, 5, 6}, {7, 8, 9}});
   Matrix<double> matrix_expected(
       {{-1, 2, -1}, {2, -7, 4}, {-1, 4.66667, -2.66667}});
-      
   auto res = matrix.Inverse();
   printMatrix(matrix_expected - res);
   return 0;
