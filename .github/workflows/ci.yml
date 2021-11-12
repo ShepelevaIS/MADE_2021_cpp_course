@@ -5,7 +5,7 @@ on:
       branches: [ main ]
 
 jobs:
-  check:
+  build:
       runs-on: ubuntu-latest
       steps:
       - uses: actions/checkout@v2
@@ -24,11 +24,6 @@ jobs:
         run: g++ -fsanitize=address,undefined -fno-sanitize-recover=all -fsanitize-undefined-trap-on-error ./home_task_2/main.cc --std=c++17
       - name: run_built
         run: ./a.out
-  build:
-      runs-on: ubuntu-latest
-      needs: [check]
-      steps:
-      - uses: actions/checkout@v2
       - run: rm -rf build
         working-directory: home_task_2
       - run: mkdir build
@@ -41,11 +36,6 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           path: main.out
-  test:
-    runs-on: ubuntu-latest
-    needs: [build]
-    steps:
-    - uses: actions/checkout@v2
-    - name: test_with_valgrind
-      run: valgrind --tool=memcheck --leak-check=yes ./tests/test_matrix_calculator
-      working-directory: build
+      - name: test_with_valgrind
+        run: valgrind --tool=memcheck --leak-check=yes ./tests/test_matrix_calculator
+        working-directory: build
