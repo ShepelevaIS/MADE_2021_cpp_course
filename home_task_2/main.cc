@@ -1,6 +1,5 @@
 #include "matrix_calculator_lib/matrix_calculator.h"
 #include <iostream>
-#include <vector>
 
 template <typename Data> void printVector(const Vector<Data> &vector) {
   for (size_t i = 0; i < vector.Size(); ++i) {
