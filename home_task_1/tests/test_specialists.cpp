@@ -5,5 +5,5 @@ extern "C" {
 }
 
 TEST(Specialists_db, TestBasics) {
-  EXPECT_EQ(18, createSpecialist("Irina", 18, "F", "DS", 324000).age);
+  EXPECT_EQ(18, create_specialist("Irina", 18, "F", "DS", 324000).age);
 }

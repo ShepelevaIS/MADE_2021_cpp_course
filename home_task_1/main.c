@@ -2,17 +2,16 @@
 #include <stdio.h>
 
 int main() {
-  int max_count;
-  scanf("%d", &max_count);
-  struct Specialist *specialists = readSpecialists(max_count);
-  printSpecialists(specialists, max_count);
-  int max_age;
-  scanf("%d", &max_age);
-  int filtered_size;
-  struct Specialist *filtered_specialists =
-      getSpecialistByAge(specialists, max_count, max_age, &filtered_size);
-  printSpecialists(filtered_specialists, filtered_size);
+  specialist_t *specialists = NULL;
+  size_t num_specialists = read_specialists(&specialists);
+  print_specialists(specialists, num_specialists);
+  unsigned int max_age = 0;
+  scanf("%u", &max_age);
+  size_t filtered_size = 0;
+  specialist_t *filtered_specialists =
+      get_specialists_by_age(specialists, num_specialists, max_age, &filtered_size);
+  print_specialists(filtered_specialists, filtered_size);
   clear(filtered_specialists, filtered_size);
-  clear(specialists, max_count);
+  clear(specialists, num_specialists);
   return 0;
 }

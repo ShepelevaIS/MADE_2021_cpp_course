@@ -5,34 +5,33 @@
 #include <stdlib.h>
 #include <string.h>
 
-char* strdup(const char*);
+// char *strdup(const char *);
 
-struct Specialist {
-    int id;
-    char* name;
-    int age;
-    char* gender;
-    char* role;
-    int salary;
-};
+typedef struct specialist {
+  size_t id;
+  char *name;
+  unsigned int age;
+  char *gender;
+  char *role;
+  unsigned int salary;
+} specialist_t;
 
-struct Specialist createSpecialist(const char* name,
-    int age,
-    const char* gender,
-    const char* role,
-    int salary);
+specialist_t create_specialist(const char *name, unsigned int age,
+                                   const char *gender, const char *role,
+                                   unsigned int salary);
 
-struct Specialist readSpecialist();
+specialist_t read_specialist();
 
-void deleteSpecialist(struct Specialist* to_delete);
+void delete_specialist(specialist_t *to_delete);
 
-struct Specialist* readSpecialists(int count);
+size_t read_specialists(specialist_t** specialists);
 
-void printSpecialists(const struct Specialist* to_print, int count);
+void print_specialists(const specialist_t *to_print, size_t count);
 
-struct Specialist deepCopy(const struct Specialist* from);
+specialist_t deep_copy(const specialist_t *from);
 
-void clear(struct Specialist* to_delete, int count);
+void clear(specialist_t *to_delete, size_t count);
 
-struct Specialist* getSpecialistByAge(const struct Specialist* from, int size, int max_age, int* result_size);
+specialist_t *get_specialists_by_age(const specialist_t *from, size_t size,
+                                    unsigned int max_age, size_t *result_size);
 #endif // SPECIALISTS_DB_H
