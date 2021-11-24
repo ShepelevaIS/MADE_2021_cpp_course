@@ -8,8 +8,6 @@ genhtml -o report coverage.info
 
 cd build/report
 
-python3 -m http.server 8000
-
 ./linters/run.sh
 clang-format -i main.c
 valgrind --tool=memcheck --leak-check=yes ./specialists_db_lib/specialists_db
