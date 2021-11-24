@@ -40,5 +40,5 @@ jobs:
         with:
           path: main.out
       - name: test_with_valgrind
-        run: valgrind --tool=memcheck --leak-check=yes ./tests/test_specialists_db
+        run: valgrind --tool=memcheck --leak-check=yes ./tests/test_specialists
         working-directory: home_task_1/build
