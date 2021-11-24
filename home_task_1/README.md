@@ -5,9 +5,6 @@
 lcov -t "tests/test_specialists" -o coverage.info -c -d specialists_db_lib/ 
 genhtml -o report coverage.info
 cd build/report
-python3 -m http.server 8000
 
 ./linters/run.sh
 clang-format -i main.c
-valgrind --tool=memcheck --leak-check=yes ./specialists_db_lib/specialists_db
-gcc -fsanitize=address,undefined -fno-sanitize-recover=all -fsanitize-undefined-trap-on-error ./specialists_db

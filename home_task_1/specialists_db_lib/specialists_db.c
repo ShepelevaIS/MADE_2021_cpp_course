@@ -1,4 +1,5 @@
 #include "specialists_db.h"
+#include <malloc.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,41 +23,66 @@ specialist_t create_specialist(const char *name, unsigned int age,
   };
 }
 
-specialist_t read_specialist() {
-  static const int MAX_LEN = 50;
-  char name[MAX_LEN];
+specialist_t read_specialist(size_t max_len, FILE* stream) {
+  char* name = (char*)malloc(sizeof(char) * max_len);
   unsigned int age;
-  char gender[MAX_LEN];
-  char role[MAX_LEN];
+  char* gender = (char*)malloc(sizeof(char) * max_len);
+  char* role = (char*)malloc(sizeof(char) * max_len);
   unsigned int salary;
-  scanf("%s%u%s%s%u", name, &age, gender, role, &salary);
-  return create_specialist(name, age, gender, role, salary);
+  fscanf(stream, "%s%u%s%s%u", name, &age, gender, role, &salary);
+  specialist_t specialist = create_specialist(name, age, gender, role, salary);
+  free(name);
+  free(gender);
+  free(role);
+  return specialist;
 }
 
 void delete_specialist(specialist_t *to_delete) {
-  free(to_delete->name);
-  free(to_delete->gender);
-  free(to_delete->role);
-}
-
-size_t read_specialists(specialist_t** specialists) {
-// specialist_t *read_specialists(int count) {
-  size_t num_specialists = 0;
-  assert(1, scanf("%zu", &num_specialists), "scanf error");
-  *specialists = (specialist_t *)malloc(num_specialists * sizeof(specialist_t));
-  for (size_t i = 0; i < num_specialists; ++i) {
-    *specialists[i] = read_specialist();
-    (*specialists)[i].id = i;
+  if (to_delete == NULL) {
+    return;
   }
-  return num_specialists;
+  if (to_delete->name != NULL) {
+    free(to_delete->name);
+    to_delete->name = NULL;
+  }
+  if (to_delete->gender != NULL) {
+    free(to_delete->gender);
+    to_delete->gender = NULL;
+  }
+  if (to_delete->role != NULL) {
+    free(to_delete->role);
+    to_delete->role = NULL;
+  }
 }
 
-void print_specialists(const specialist_t *to_print, size_t count) {
+specialists_t read_specialists(size_t max_len, FILE* stream) {
+  size_t count = 0;
+  assert(1, fscanf(stream, "%zu", &count), "scanf error");
+  specialist_t* specialists = (specialist_t *)malloc(count * sizeof(specialist_t));
   for (size_t i = 0; i < count; ++i) {
-    printf(
+    specialists[i] = read_specialist(max_len, stream);
+    specialists[i].id = i;
+  }
+  return (specialists_t) {
+    .specialists = specialists,
+    .count = count
+  };
+}
+
+void print_specialists(const specialists_t *to_print, FILE* stream) {
+  if (to_print == NULL) {
+    return;
+  }
+  const specialist_t* specialists = to_print->specialists;
+  if (specialists == NULL) {
+    return;
+  }
+  for (size_t i = 0; i < to_print->count; ++i) {
+    fprintf(
+        stream,
         "ID:\t%zu, Name:\t%s, age:\t%u, gender:\t%s, role:\t%s, salary:\t%u\n",
-        to_print[i].id, to_print[i].name, to_print[i].age, to_print[i].gender,
-        to_print[i].role, to_print[i].salary);
+        specialists[i].id, specialists[i].name, specialists[i].age, specialists[i].gender,
+        specialists[i].role, specialists[i].salary);
   }
 }
 
@@ -67,25 +93,48 @@ specialist_t deep_copy(const specialist_t *from) {
   return result;
 }
 
-void clear(specialist_t *to_delete, size_t count) {
-  for (size_t i = 0; i < count; ++i) {
-    delete_specialist(&to_delete[i]);
+void delete_specialists(specialists_t *to_delete) {
+  if (to_delete == NULL) {
+    return;
   }
-  free(to_delete);
+  specialist_t* specialists = to_delete->specialists;
+  if (specialists == NULL) {
+    return;
+  }
+  size_t count = to_delete->count;
+  for (size_t i = 0; i < count; ++i) {
+    delete_specialist(&specialists[i]);
+  }
+  free(specialists);
+  to_delete->specialists = NULL;
+  to_delete->count = 0;
 }
 
-specialist_t *get_specialists_by_age(const specialist_t *from, size_t size,
-                                    // bool (*predicate)(const specialist_t *specialist),
-                                    unsigned int max_age, size_t *result_size) {
-  specialist_t *result =
-      (specialist_t *)malloc(size * sizeof(specialist_t));
+specialists_t get_specialists_by_age(const specialists_t *from, unsigned int max_age) {
+  if (from == NULL) {
+    return (specialists_t) {
+      .specialists = NULL,
+      .count = 0
+    };
+  }
+  specialist_t* specialists = from->specialists;
+  if (specialists == NULL) {
+    return (specialists_t) {
+      .specialists = NULL,
+      .count = 0
+    };
+  }
+  size_t count = from->count;
+  specialist_t *result = (specialist_t *)malloc(count * sizeof(specialist_t));
   size_t next_pos = 0;
-  for (size_t i = 0; i < size; ++i) {
-    if (from[i].age <= max_age) {
-      result[next_pos] = deep_copy(&from[i]);
+  for (size_t i = 0; i < count; ++i) {
+    if (specialists[i].age <= max_age) {
+      result[next_pos] = deep_copy(&specialists[i]);
       ++next_pos;
     }
   }
-  *result_size = next_pos;
-  return result;
+  return (specialists_t) {
+    .specialists = result,
+    .count = next_pos
+  };
 }

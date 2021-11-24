@@ -1,0 +1,4 @@
+3
+Ivan 25 M DE 100
+Petr 40 M DA 99
+Alena 24 F DS 110
