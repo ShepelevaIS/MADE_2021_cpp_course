@@ -5,11 +5,11 @@ extern "C" {
 #include "specialists_db.h"
 }
 
-TEST(TestBasics, one_specialist) {
+TEST(TestBasics, OneSpecialistAttribute) {
   EXPECT_EQ(18, create_specialist("Irina", 18, "F", "DS", 324000).age);
 }
 
-TEST(TestBasics, read_specialists) {
+TEST(TestBasics, ReadSpecialists) {
   static const size_t MAX_LEN = 50;
   FILE* fin = fopen("../tests/specialists.txt", "r");
   specialists_t specialists = read_specialists(MAX_LEN, fin);
@@ -18,7 +18,7 @@ TEST(TestBasics, read_specialists) {
   fclose(fin);
 }
 
-TEST(TestBasics, filter_specialists) {
+TEST(TestBasics, FilterSpecialists) {
   static const size_t MAX_LEN = 50;
   FILE* fin = fopen("../tests/specialists.txt", "r");
   specialists_t specialists = read_specialists(MAX_LEN, fin);
@@ -29,7 +29,7 @@ TEST(TestBasics, filter_specialists) {
   fclose(fin);
 }
 
-TEST(TestBasics, print_specialists) {
+TEST(TestBasics, PrintSpecialists) {
   static const size_t MAX_LEN = 50;
   FILE* fin = fopen("../tests/specialists.txt", "r");
   specialists_t specialists = read_specialists(MAX_LEN, fin);
