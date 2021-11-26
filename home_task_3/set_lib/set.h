@@ -38,11 +38,6 @@ template <typename T> Node<T> *FindNext(Node<T> *node_ptr) {
 }
 
 template <typename T> Node<T> *FindPrev(Node<T> *node_ptr) {
-  // if ((node_ptr == nullptr) && (node_ptr->parent != nullptr)) {
-  //   return node_ptr->parent;
-  // } else if (node_ptr == nullptr) {
-  //   return nullptr;
-  // }
   if (node_ptr == nullptr) {
     return nullptr;
   }
@@ -163,7 +158,7 @@ public:
       root_->parent = nullptr;
     }
     begin_ = FindMin(root_);
-    last_ = FindMax(root_); // Fix
+    last_ = FindMax(root_);
   }
 
 private:
@@ -199,17 +194,26 @@ private:
   }
 
   void FixHeight(Node<T> *node_ptr) {
+    if (node_ptr == nullptr) {
+      return;
+    }
     node_ptr->height =
         1 + std::max(GetHeight(node_ptr->left), GetHeight(node_ptr->right));
   }
 
   void FixLeftParent(Node<T> *node_ptr) {
+    if (node_ptr == nullptr) {
+      return;
+    }
     if (node_ptr->left) {
       node_ptr->left->parent = node_ptr;
     }
   }
 
   void FixRightParent(Node<T> *node_ptr) {
+    if (node_ptr == nullptr) {
+      return;
+    }
     if (node_ptr->right) {
       node_ptr->right->parent = node_ptr;
     }
