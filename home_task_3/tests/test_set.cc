@@ -20,7 +20,7 @@ TEST(SetTest, ConstructInitializerList) {
   Set<int64_t> set({3, 5, 4, 1, 2});
   std::vector<int64_t> elements{3, 5, 4, 1, 2};
   Set<int64_t> expected_set(elements.begin(), elements.end());
-  EXPECT_EQ(expected_set, set);  
+  EXPECT_EQ(expected_set, set);
 }
 
 TEST(SetTest, CheckCopy) {
@@ -45,35 +45,35 @@ TEST(SetTest, IsEmpty) {
 TEST(SetTest, CheckSize) {
   Set<int64_t> set;
   size_t size = set.size();
-  EXPECT_TRUE(size == 0); 
+  EXPECT_TRUE(size == 0);
 }
 
 TEST(SetTest, InsertNew) {
   Set<int64_t> set({3, 5, 4, 1, 2});
   set.insert(7);
   Set<int64_t> expected_set({1, 2, 3, 4, 5, 7});
-  EXPECT_EQ(expected_set, set);  
+  EXPECT_EQ(expected_set, set);
 }
 
 TEST(SetTest, InsertExisting) {
   Set<int64_t> set({3, 5, 4, 1, 2});
   set.insert(5);
   Set<int64_t> expected_set({1, 2, 3, 4, 5});
-  EXPECT_EQ(expected_set, set);  
+  EXPECT_EQ(expected_set, set);
 }
 
 TEST(SetTest, EraseExisting) {
   Set<int64_t> set({3, 5, 4, 1, 2});
   set.erase(3);
   Set<int64_t> expected_set({5, 4, 1, 2});
-  EXPECT_EQ(expected_set, set);  
+  EXPECT_EQ(expected_set, set);
 }
 
 TEST(SetTest, EraseNotExisting) {
   Set<int64_t> set({3, 5, 4, 1, 2});
   set.erase(9);
   Set<int64_t> expected_set({3, 5, 4, 1, 2});
-  EXPECT_EQ(expected_set, set);  
+  EXPECT_EQ(expected_set, set);
 }
 
 TEST(SetTest, EraseEmpty) {
@@ -86,13 +86,13 @@ TEST(SetTest, EraseEmpty) {
 TEST(SetTest, CheckExists) {
   Set<int64_t> set({3, 2});
   auto iter = set.find(2);
-  EXPECT_EQ(2, *iter); 
+  EXPECT_EQ(2, *iter);
 }
 
 TEST(SetTest, CheckNotExists) {
   Set<int64_t> set({3, 2});
   auto iter = set.find(4);
-  EXPECT_EQ(set.end(), iter); 
+  EXPECT_EQ(set.end(), iter);
 }
 
 TEST(SetTest, LowerBoundEqual) {

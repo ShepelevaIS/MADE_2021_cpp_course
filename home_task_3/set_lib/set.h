@@ -10,6 +10,8 @@
 
 struct Node {
   Node() : left(nullptr), right(nullptr), parent(nullptr) {}
+  Node(Node *in_left, Node *in_right, Node *in_parent)
+      : left(in_left), right(in_right), parent(in_parent) {}
   virtual ~Node() {}
 
   Node *left;
@@ -18,19 +20,19 @@ struct Node {
 };
 
 template <typename T> struct ValueNode : public Node {
-  ValueNode(const T& in_key) : Node(), key(in_key), height(1) {}
+  ValueNode(const T &in_key) : Node(), key(in_key), height(1) {}
   virtual ~ValueNode() {}
 
   T key;
   size_t height;
 };
 
-template <typename T>
-ValueNode<T>* AsValueNode(Node* node_ptr) {
-  return static_cast<ValueNode<T>*>(node_ptr);
+template <typename T> ValueNode<T> *AsValueNode(Node *node_ptr) {
+  return static_cast<ValueNode<T> *>(node_ptr);
 }
 
 Node *FindNext(Node *node_ptr) {
+  Node *origin_ptr = node_ptr;
   if (node_ptr == nullptr) {
     return nullptr;
   }
@@ -39,13 +41,13 @@ Node *FindNext(Node *node_ptr) {
     while (node_ptr->left) {
       node_ptr = node_ptr->left;
     }
-    return node_ptr;
   } else {
     while (node_ptr->parent && node_ptr->parent->right == node_ptr) {
       node_ptr = node_ptr->parent;
     }
-    return node_ptr->parent;
+    node_ptr = node_ptr->parent;
   }
+  return node_ptr;
 }
 
 Node *FindPrev(Node *node_ptr) {
@@ -57,30 +59,32 @@ Node *FindPrev(Node *node_ptr) {
     while (node_ptr->right) {
       node_ptr = node_ptr->right;
     }
-    return node_ptr;
   } else {
     while (node_ptr->parent && node_ptr->parent->left == node_ptr) {
       node_ptr = node_ptr->parent;
     }
-    return node_ptr->parent;
+    node_ptr = node_ptr->parent;
   }
+  return node_ptr;
 }
 
 template <typename T> class Set {
 public:
   class iterator;
 
-  Set() : begin_(nullptr), last_(nullptr), root_(nullptr), size_(0) {}
+  Set() : size_(0) {
+    end_ = new Node();
+    begin_ = end_;
+    root_ = end_;
+  }
 
-  template <typename Iter>
-  Set(Iter begin, Iter end) : begin_(nullptr), last_(nullptr), root_(nullptr), size_(0) {
+  template <typename Iter> Set(Iter begin, Iter end) : Set() {
     for (auto iter = begin; iter != end; ++iter) {
       insert(*iter);
     }
   }
 
-  Set(std::initializer_list<T> values)
-      : begin_(nullptr), last_(nullptr), root_(nullptr), size_(0) {
+  Set(std::initializer_list<T> values) : Set() {
     for (const auto &value : values) {
       insert(value);
     }
@@ -99,20 +103,21 @@ public:
   }
 
   ~Set() {
-    while (root_ != nullptr) {
+    while (root_ != end_) {
       root_ = MakeDelete(root_, AsValueNode<T>(root_)->key);
     }
+    delete end_;
   }
 
   iterator begin() const { return iterator(begin_); }
 
-  iterator end() const { return iterator(nullptr); }
+  iterator end() const { return iterator(end_); }
 
   size_t size() const { return size_; }
 
-  bool empty() const { return root_ == nullptr; }
+  bool empty() const { return begin_ == end_; }
 
-  bool operator==(const Set<T>& other) const {
+  bool operator==(const Set<T> &other) const {
     if (size_ != other.size_) {
       return false;
     }
@@ -128,16 +133,14 @@ public:
     return true;
   }
 
-  bool operator!=(const Set<T>& other) const {
-    return !(*this == other);
-  }
+  bool operator!=(const Set<T> &other) const { return !(*this == other); }
 
   iterator find(const T &value) const { return iterator(Search(root_, value)); }
 
   iterator lower_bound(const T &value) const {
-    Node* result = nullptr;
-    Node* node_ptr = root_;
-    while (node_ptr != nullptr) {
+    Node *result = end_;
+    Node *node_ptr = root_;
+    while (node_ptr != nullptr && node_ptr != end_) {
       if (AsValueNode<T>(node_ptr)->key < value) {
         node_ptr = node_ptr->right;
       } else {
@@ -150,7 +153,7 @@ public:
 
   void swap(Set<T> &other) {
     std::swap(begin_, other.begin_);
-    std::swap(last_, other.last_);
+    std::swap(end_, other.end_);
     std::swap(root_, other.root_);
     std::swap(size_, other.size_);
   }
@@ -170,11 +173,11 @@ private:
     if (root_ != nullptr) {
       root_->parent = nullptr;
     }
-    begin_ = AsValueNode<T>(FindMin(root_));
-    last_ = AsValueNode<T>(FindMax(root_));
+    begin_ = FindLeftmost(root_);
+    end_ = FindRightmost(root_);
   }
 
-  Node *FindMin(Node *node_ptr) const {
+  Node *FindLeftmost(Node *node_ptr) const {
     if (node_ptr == nullptr) {
       return nullptr;
     }
@@ -184,7 +187,7 @@ private:
     return node_ptr;
   }
 
-  Node *FindMax(Node *node_ptr) const {
+  Node *FindRightmost(Node *node_ptr) const {
     if (node_ptr == nullptr) {
       return nullptr;
     }
@@ -210,7 +213,8 @@ private:
       return;
     }
     AsValueNode<T>(node_ptr)->height =
-        1 + std::max(GetHeight(AsValueNode<T>(node_ptr->left)), GetHeight(AsValueNode<T>(node_ptr->right)));
+        1 + std::max(GetHeight(AsValueNode<T>(node_ptr->left)),
+                     GetHeight(AsValueNode<T>(node_ptr->right)));
   }
 
   void FixLeftParent(Node *node_ptr) {
@@ -272,6 +276,9 @@ private:
   }
 
   Node *MakeRotates(Node *node_ptr) {
+    if (node_ptr == nullptr || node_ptr == end_) {
+      return node_ptr;
+    }
     FixHeight(node_ptr);
     if (GetBalance(node_ptr) == 2) {
       if (GetBalance(node_ptr->right) < 0) {
@@ -303,8 +310,14 @@ private:
 
   Node *MakeInsert(Node *node_ptr, const T &value) {
     if (node_ptr == nullptr) {
-      ValueNode<T> *new_node = new ValueNode<T>(value);
+      Node *new_node = new ValueNode<T>(value);
       ++size_;
+      return new_node;
+    } else if (node_ptr == end_) {
+      Node *new_node = new ValueNode<T>(value);
+      ++size_;
+      new_node->right = end_;
+      FixRightParent(new_node);
       return new_node;
     } else if (value < AsValueNode<T>(node_ptr)->key) {
       node_ptr->left = MakeInsert(node_ptr->left, value);
@@ -320,6 +333,9 @@ private:
   Node *MakeDelete(Node *node_ptr, const T &value) {
     if (node_ptr == nullptr) {
       return nullptr;
+    }
+    if (node_ptr == end_) {
+      return end_;
     }
     if (value < AsValueNode<T>(node_ptr)->key) {
       node_ptr->left = MakeDelete(node_ptr->left, value);
@@ -351,8 +367,10 @@ private:
       result = MakeRotates(result);
       return result;
     } else {
-      AsValueNode<T>(node_ptr)->key = AsValueNode<T>(FindMin(node_ptr->right))->key;
-      AsValueNode<T>(node_ptr)->right = MakeDelete(node_ptr->right, AsValueNode<T>(node_ptr)->key);
+      AsValueNode<T>(node_ptr)->key =
+          AsValueNode<T>(FindRightmost(node_ptr->left))->key;
+      AsValueNode<T>(node_ptr)->left =
+          MakeDelete(node_ptr->left, AsValueNode<T>(node_ptr)->key);
       FixLeftParent(node_ptr);
     }
     node_ptr = MakeRotates(node_ptr);
@@ -360,10 +378,11 @@ private:
   }
 
   Node *Search(Node *node_ptr, const T &value) const {
-    if (node_ptr == nullptr) {
-      return nullptr;
+    if (node_ptr == nullptr || node_ptr == end_) {
+      return node_ptr;
     }
-    if ((!(AsValueNode<T>(node_ptr)->key < value)) && (!(value < AsValueNode<T>(node_ptr)->key))) {
+    if ((!(AsValueNode<T>(node_ptr)->key < value)) &&
+        (!(value < AsValueNode<T>(node_ptr)->key))) {
       return node_ptr;
     } else if (value < AsValueNode<T>(node_ptr)->key) {
       return Search(node_ptr->left, value);
@@ -373,7 +392,7 @@ private:
   }
 
   Node *begin_;
-  Node *last_;
+  Node *end_;
   Node *root_;
   size_t size_;
 
@@ -388,8 +407,8 @@ public:
   using iterator_category = std::bidirectional_iterator_tag;
   using difference_type = std::ptrdiff_t;
   using value_type = T;
-  using pointer = T*;
-  using reference = T&;
+  using pointer = T *;
+  using reference = T &;
 
   iterator &operator++() {
     node_ptr_ = FindNext(node_ptr_);
@@ -415,14 +434,16 @@ public:
 
   const value_type &operator*() const { return AsValueNode<T>(node_ptr_)->key; }
 
-  const value_type *operator->() const { return &(AsValueNode<T>(node_ptr_)->key); }
+  const value_type *operator->() const {
+    return &(AsValueNode<T>(node_ptr_)->key);
+  }
 
   bool operator==(const iterator &other) const {
     return node_ptr_ == other.node_ptr_;
   }
 
   bool operator!=(const iterator &other) const {
-    return !(*this == other);
+    return node_ptr_ != other.node_ptr_;
   }
 
 private:
