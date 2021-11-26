@@ -8,18 +8,29 @@
 #include <optional>
 #include <vector>
 
-template <typename T> struct Node {
-  Node(T in_key)
-      : key(in_key), left(nullptr), right(nullptr), parent(nullptr), height(1) {
-  }
+struct Node {
+  Node() : left(nullptr), right(nullptr), parent(nullptr) {}
+  virtual ~Node() {}
+
+  Node *left;
+  Node *right;
+  Node *parent;
+};
+
+template <typename T> struct ValueNode : public Node {
+  ValueNode(const T& in_key) : Node(), key(in_key), height(1) {}
+  virtual ~ValueNode() {}
+
   T key;
-  Node<T> *left;
-  Node<T> *right;
-  Node<T> *parent;
   size_t height;
 };
 
-template <typename T> Node<T> *FindNext(Node<T> *node_ptr) {
+template <typename T>
+ValueNode<T>* AsValueNode(Node* node_ptr) {
+  return static_cast<ValueNode<T>*>(node_ptr);
+}
+
+Node *FindNext(Node *node_ptr) {
   if (node_ptr == nullptr) {
     return nullptr;
   }
@@ -37,7 +48,7 @@ template <typename T> Node<T> *FindNext(Node<T> *node_ptr) {
   }
 }
 
-template <typename T> Node<T> *FindPrev(Node<T> *node_ptr) {
+Node *FindPrev(Node *node_ptr) {
   if (node_ptr == nullptr) {
     return nullptr;
   }
@@ -77,8 +88,7 @@ public:
 
   Set(const Set<T> &other) : size_(other.size_) {
     root_ = MakeCopy(other.root_);
-    begin_ = FindMin(root_);
-    last_ = FindMax(root_);
+    UpdatePointers();
   }
 
   Set<T> &operator=(const Set<T> &other) {
@@ -90,13 +100,13 @@ public:
 
   ~Set() {
     while (root_ != nullptr) {
-      root_ = MakeDelete(root_, root_->key);
+      root_ = MakeDelete(root_, AsValueNode<T>(root_)->key);
     }
   }
 
-  iterator begin() const { return begin_; }
+  iterator begin() const { return iterator(begin_); }
 
-  iterator end() const { return nullptr; }
+  iterator end() const { return iterator(nullptr); }
 
   size_t size() const { return size_; }
 
@@ -122,20 +132,20 @@ public:
     return !(*this == other);
   }
 
-  iterator find(const T &value) const { return Search(root_, value); }
+  iterator find(const T &value) const { return iterator(Search(root_, value)); }
 
   iterator lower_bound(const T &value) const {
-    Node<T>* result = nullptr;
-    Node<T>* node_ptr = root_;
+    Node* result = nullptr;
+    Node* node_ptr = root_;
     while (node_ptr != nullptr) {
-      if (node_ptr->key < value) {
+      if (AsValueNode<T>(node_ptr)->key < value) {
         node_ptr = node_ptr->right;
       } else {
         result = node_ptr;
         node_ptr = node_ptr->left;
       }
     }
-    return result;
+    return iterator(result);
   }
 
   void swap(Set<T> &other) {
@@ -147,22 +157,24 @@ public:
 
   void insert(const T &value) {
     root_ = MakeInsert(root_, value);
-    root_->parent = nullptr;
-    begin_ = FindMin(root_);
-    last_ = FindMax(root_);
+    UpdatePointers();
   }
 
   void erase(const T &value) {
     root_ = MakeDelete(root_, value);
-    if (root_ != nullptr) {
-      root_->parent = nullptr;
-    }
-    begin_ = FindMin(root_);
-    last_ = FindMax(root_);
+    UpdatePointers();
   }
 
 private:
-  Node<T> *FindMin(Node<T> *node_ptr) const {
+  void UpdatePointers() {
+    if (root_ != nullptr) {
+      root_->parent = nullptr;
+    }
+    begin_ = AsValueNode<T>(FindMin(root_));
+    last_ = AsValueNode<T>(FindMax(root_));
+  }
+
+  Node *FindMin(Node *node_ptr) const {
     if (node_ptr == nullptr) {
       return nullptr;
     }
@@ -172,7 +184,7 @@ private:
     return node_ptr;
   }
 
-  Node<T> *FindMax(Node<T> *node_ptr) const {
+  Node *FindMax(Node *node_ptr) const {
     if (node_ptr == nullptr) {
       return nullptr;
     }
@@ -182,26 +194,26 @@ private:
     return node_ptr;
   }
 
-  size_t GetHeight(Node<T> *node_ptr) const {
-    return (node_ptr == nullptr) ? 0 : node_ptr->height;
+  size_t GetHeight(Node *node_ptr) const {
+    return (node_ptr == nullptr) ? 0 : AsValueNode<T>(node_ptr)->height;
   }
 
-  int64_t GetBalance(Node<T> *node_ptr) const {
+  int64_t GetBalance(Node *node_ptr) const {
     return (node_ptr == nullptr)
                ? 0
                : static_cast<int64_t>(GetHeight(node_ptr->right)) -
                      static_cast<int64_t>(GetHeight(node_ptr->left));
   }
 
-  void FixHeight(Node<T> *node_ptr) {
+  void FixHeight(Node *node_ptr) {
     if (node_ptr == nullptr) {
       return;
     }
-    node_ptr->height =
-        1 + std::max(GetHeight(node_ptr->left), GetHeight(node_ptr->right));
+    AsValueNode<T>(node_ptr)->height =
+        1 + std::max(GetHeight(AsValueNode<T>(node_ptr->left)), GetHeight(AsValueNode<T>(node_ptr->right)));
   }
 
-  void FixLeftParent(Node<T> *node_ptr) {
+  void FixLeftParent(Node *node_ptr) {
     if (node_ptr == nullptr) {
       return;
     }
@@ -210,7 +222,7 @@ private:
     }
   }
 
-  void FixRightParent(Node<T> *node_ptr) {
+  void FixRightParent(Node *node_ptr) {
     if (node_ptr == nullptr) {
       return;
     }
@@ -219,8 +231,8 @@ private:
     }
   }
 
-  Node<T> *SmallRotateRight(Node<T> *p_node) {
-    Node<T> *q_node = p_node->left;
+  Node *SmallRotateRight(Node *p_node) {
+    Node *q_node = p_node->left;
     p_node->left = q_node->right;
     FixLeftParent(p_node);
 
@@ -232,8 +244,8 @@ private:
     return q_node;
   }
 
-  Node<T> *SmallRotateLeft(Node<T> *q_node) {
-    Node<T> *p_node = q_node->right;
+  Node *SmallRotateLeft(Node *q_node) {
+    Node *p_node = q_node->right;
     q_node->right = p_node->left;
     FixRightParent(q_node);
 
@@ -245,21 +257,21 @@ private:
     return p_node;
   }
 
-  Node<T> *BigRotateLeft(Node<T> *q_node) {
-    Node<T> *p_node = q_node->right;
+  Node *BigRotateLeft(Node *q_node) {
+    Node *p_node = q_node->right;
     q_node->right = SmallRotateRight(p_node);
     FixRightParent(q_node);
     return SmallRotateLeft(q_node);
   }
 
-  Node<T> *BigRotateRight(Node<T> *p_node) {
-    Node<T> *q_node = p_node->left;
+  Node *BigRotateRight(Node *p_node) {
+    Node *q_node = p_node->left;
     p_node->left = SmallRotateLeft(q_node);
     FixLeftParent(p_node);
     return SmallRotateRight(p_node);
   }
 
-  Node<T> *MakeRotates(Node<T> *node_ptr) {
+  Node *MakeRotates(Node *node_ptr) {
     FixHeight(node_ptr);
     if (GetBalance(node_ptr) == 2) {
       if (GetBalance(node_ptr->right) < 0) {
@@ -277,11 +289,11 @@ private:
     return node_ptr;
   }
 
-  Node<T> *MakeCopy(Node<T> *node_ptr) {
+  Node *MakeCopy(Node *node_ptr) {
     if (node_ptr == nullptr) {
       return nullptr;
     }
-    Node<T> *new_node = new Node(*node_ptr);
+    ValueNode<T> *new_node = new ValueNode<T>(*AsValueNode<T>(node_ptr));
     new_node->left = MakeCopy(node_ptr->left);
     FixLeftParent(new_node);
     new_node->right = MakeCopy(node_ptr->right);
@@ -289,15 +301,15 @@ private:
     return new_node;
   }
 
-  Node<T> *MakeInsert(Node<T> *node_ptr, const T &value) {
+  Node *MakeInsert(Node *node_ptr, const T &value) {
     if (node_ptr == nullptr) {
-      Node<T> *new_node = new Node(value);
+      ValueNode<T> *new_node = new ValueNode<T>(value);
       ++size_;
       return new_node;
-    } else if (value < node_ptr->key) {
+    } else if (value < AsValueNode<T>(node_ptr)->key) {
       node_ptr->left = MakeInsert(node_ptr->left, value);
       FixLeftParent(node_ptr);
-    } else if (node_ptr->key < value) {
+    } else if (AsValueNode<T>(node_ptr)->key < value) {
       node_ptr->right = MakeInsert(node_ptr->right, value);
       FixRightParent(node_ptr);
     }
@@ -305,17 +317,17 @@ private:
     return node_ptr;
   }
 
-  Node<T> *MakeDelete(Node<T> *node_ptr, const T &value) {
+  Node *MakeDelete(Node *node_ptr, const T &value) {
     if (node_ptr == nullptr) {
       return nullptr;
     }
-    if (value < node_ptr->key) {
+    if (value < AsValueNode<T>(node_ptr)->key) {
       node_ptr->left = MakeDelete(node_ptr->left, value);
       FixLeftParent(node_ptr);
       node_ptr = MakeRotates(node_ptr);
       return node_ptr;
     }
-    if (node_ptr->key < value) {
+    if (AsValueNode<T>(node_ptr)->key < value) {
       node_ptr->right = MakeDelete(node_ptr->right, value);
       FixRightParent(node_ptr);
       node_ptr = MakeRotates(node_ptr);
@@ -327,42 +339,42 @@ private:
       return nullptr;
     }
     if (node_ptr->left == nullptr) {
-      Node<T> *result = node_ptr->right;
+      Node *result = node_ptr->right;
       delete node_ptr;
       --size_;
       result = MakeRotates(result);
       return result;
     } else if (node_ptr->right == nullptr) {
-      Node<T> *result = node_ptr->left;
+      Node *result = node_ptr->left;
       delete node_ptr;
       --size_;
       result = MakeRotates(result);
       return result;
     } else {
-      node_ptr->key = FindMin(node_ptr->right)->key;
-      node_ptr->right = MakeDelete(node_ptr->right, node_ptr->key);
+      AsValueNode<T>(node_ptr)->key = AsValueNode<T>(FindMin(node_ptr->right))->key;
+      AsValueNode<T>(node_ptr)->right = MakeDelete(node_ptr->right, AsValueNode<T>(node_ptr)->key);
       FixLeftParent(node_ptr);
     }
     node_ptr = MakeRotates(node_ptr);
     return node_ptr;
   }
 
-  Node<T> *Search(Node<T> *node_ptr, const T &value) const {
+  Node *Search(Node *node_ptr, const T &value) const {
     if (node_ptr == nullptr) {
       return nullptr;
     }
-    if ((!(node_ptr->key < value)) && (!(value < node_ptr->key))) {
+    if ((!(AsValueNode<T>(node_ptr)->key < value)) && (!(value < AsValueNode<T>(node_ptr)->key))) {
       return node_ptr;
-    } else if (value < node_ptr->key) {
+    } else if (value < AsValueNode<T>(node_ptr)->key) {
       return Search(node_ptr->left, value);
     } else {
       return Search(node_ptr->right, value);
     }
   }
 
-  Node<T> *begin_;
-  Node<T> *last_;
-  Node<T> *root_;
+  Node *begin_;
+  Node *last_;
+  Node *root_;
   size_t size_;
 
   friend class Iterator;
@@ -371,7 +383,7 @@ private:
 template <typename T> class Set<T>::iterator {
 public:
   iterator() : node_ptr_(nullptr) {}
-  iterator(Node<T> *node_ptr) : node_ptr_(node_ptr) {}
+  iterator(Node *node_ptr) : node_ptr_(node_ptr) {}
 
   using iterator_category = std::bidirectional_iterator_tag;
   using difference_type = std::ptrdiff_t;
@@ -401,9 +413,9 @@ public:
     return res;
   }
 
-  const value_type &operator*() const { return node_ptr_->key; }
+  const value_type &operator*() const { return AsValueNode<T>(node_ptr_)->key; }
 
-  const value_type *operator->() const { return &(node_ptr_->key); }
+  const value_type *operator->() const { return &(AsValueNode<T>(node_ptr_)->key); }
 
   bool operator==(const iterator &other) const {
     return node_ptr_ == other.node_ptr_;
@@ -414,7 +426,7 @@ public:
   }
 
 private:
-  Node<value_type> *node_ptr_;
+  Node *node_ptr_;
 };
 
 #endif // SET_H
