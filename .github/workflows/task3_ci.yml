@@ -1,4 +1,8 @@
-on: push
+on:
+  push:
+      branches: [ home_task_3 ]
+  pull_request:
+      branches: [ main ]
 
 jobs:
   build:
