@@ -20,8 +20,7 @@ jobs:
       - run: sudo make install
         working-directory: googletest/build
       - run: sudo apt-get install -y python3 clang-tidy lcov valgrind cppcheck
-      - run: pip install cpplint
-      - run: bash linters/bash.sh
+      - run: linters/bash.sh
         working-directory: home_task_2
       - name: build_with_sanitizers
         run: g++ -fsanitize=address,undefined -fno-sanitize-recover=all -fsanitize-undefined-trap-on-error ./home_task_2/main.cc -Ihome_task_2/matrix_calculator_lib --std=c++17
