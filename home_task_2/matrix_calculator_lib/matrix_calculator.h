@@ -3,41 +3,36 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cstring>
+#include <optional>
 
 template <typename Data> class Matrix;
 
 template <typename Data> class Vector {
 public:
-  Vector() : size_(0), values_(nullptr), is_row_(true) {}
+  enum class Type { ROW, COLUMN };
 
-  Vector(const Data *values, size_t size, bool is_row = true)
-      : size_(size), is_row_(is_row) {
-    values_ = (size_ == 0) ? nullptr : new Data[size_];
+  Vector() : size_(0), values_(nullptr), type_(Type::ROW) {}
+
+  Vector(size_t size, Type type = Type::ROW)
+      : size_(size), values_(size ? new Data[size]{} : nullptr), type_(type) {
+    std::memset(values_, 0, sizeof(Data) * size_);
+  }
+
+  Vector(const Data *values, size_t size, Type type = Type::ROW)
+      : Vector(size, type) {
     for (size_t i = 0; i < size_; ++i) {
       values_[i] = values[i];
     }
   }
 
-  Vector(size_t size, bool is_row = true) : size_(size), is_row_(is_row) {
-    values_ = (size_ == 0) ? nullptr : new Data[size_];
+  Vector(const Vector<Data> &other) : Vector(other.size_, other.type_) {
+    std::copy(other.values_, other.values_ + other.size_, values_);
   }
 
-  Vector(const Vector<Data> &other)
-      : size_(other.size_), is_row_(other.is_row_) {
-    values_ = (size_ == 0) ? nullptr : new Data[size_];
-    for (size_t i = 0; i < size_; ++i) {
-      values_[i] = other.values_[i];
-    }
-  }
-
-  Vector(std::initializer_list<Data> values, bool is_row = true)
-      : size_(values.size()), is_row_(is_row) {
-    values_ = (size_ == 0) ? nullptr : new Data[size_];
-    size_t idx = 0;
-    for (const auto &value : values) {
-      values_[idx] = value;
-      ++idx;
-    }
+  Vector(std::initializer_list<Data> values, Type type = Type::ROW)
+      : Vector(values.size(), type) {
+    std::copy(values.begin(), values.end(), values_);
   }
 
   ~Vector() {
@@ -56,23 +51,19 @@ public:
   bool operator==(const Vector<Data> &other) const {
     if (Size() != other.Size()) {
       return false;
-    } else {
-      for (size_t i = 0; i < Size(); ++i) {
-        if (values_[i] != other.values_[i]) {
-          return false;
-        }
-      }
     }
-    return true;
+    return std::equal(values_, values_ + size_, other.values_);
   }
 
   const Data &operator[](size_t index) const { return values_[index]; }
 
-  Data &operator[](size_t index) { return values_[index]; }
-
   Vector<Data> &operator+=(const Vector<Data> &other) {
-    assert(size_ == other.size_);
-    assert(is_row_ == other.is_row_);
+    if (size_ != other.size_) {
+      throw "Size mismatch";
+    }
+    if (type_ != other.type_) {
+      throw "Type mismatch";
+    }
     for (size_t i = 0; i < Size(); ++i) {
       values_[i] += other.values_[i];
     }
@@ -80,8 +71,6 @@ public:
   }
 
   Vector<Data> operator+(const Vector<Data> &other) const {
-    assert(size_ == other.size_);
-    assert(is_row_ == other.is_row_);
     Vector<Data> result(*this);
     result += other;
     return result;
@@ -100,9 +89,19 @@ public:
     return result;
   }
 
+  Matrix<Data> operator+(const Matrix<Data> &matrix) const {
+    Matrix<Data> result(matrix);
+    result += *this;
+    return result;
+  }
+
   Vector<Data> &operator-=(const Vector<Data> &other) {
-    assert(size_ == other.size_);
-    assert(is_row_ == other.is_row_);
+    if (size_ != other.size_) {
+      throw "Size mismatch";
+    }
+    if (type_ != other.type_) {
+      throw "Type mismatch";
+    }
     for (size_t i = 0; i < Size(); ++i) {
       values_[i] -= other.values_[i];
     }
@@ -110,8 +109,6 @@ public:
   }
 
   Vector<Data> operator-(const Vector<Data> &other) const {
-    assert(size_ == other.size_);
-    assert(is_row_ == other.is_row_);
     Vector<Data> result(*this);
     result -= other;
     return result;
@@ -130,9 +127,38 @@ public:
     return result;
   }
 
+  Matrix<Data> operator-(const Matrix<Data> &matrix) const {
+    if (IsRow()) {
+      if (Size() != matrix.ColSize()) {
+        throw "Size mismatch";
+      }
+      Matrix<Data> result(matrix.RowSize(), matrix.ColSize());
+      for (size_t i = 0; i < matrix.RowSize(); ++i) {
+        for (size_t j = 0; j < matrix.ColSize(); ++j) {
+          result.At(i, j) = values_[j] - matrix[i][j];
+        }
+      }
+      return result;
+    }
+    if (Size() != matrix.RowSize()) {
+      throw "Size mismatch";
+    }
+    Matrix<Data> result(matrix.RowSize(), matrix.ColSize());
+    for (size_t i = 0; i < matrix.RowSize(); ++i) {
+      for (size_t j = 0; j < matrix.ColSize(); ++j) {
+        result.At(i, j) = values_[i] - matrix[i][j];
+      }
+    }
+    return result;
+  }
+
   Vector<Data> &operator*=(const Vector<Data> &other) {
-    assert(size_ == other.size_);
-    assert(is_row_ == other.is_row_);
+    if (size_ != other.size_) {
+      throw "size mismatch";
+    }
+    if (type_ != other.type_) {
+      throw "Type mismatch";
+    }
     for (size_t i = 0; i < Size(); ++i) {
       values_[i] *= other.values_[i];
     }
@@ -140,8 +166,6 @@ public:
   }
 
   Vector<Data> operator*(const Vector<Data> &other) const {
-    assert(size_ == other.size_);
-    assert(is_row_ == other.is_row_);
     Vector<Data> result(*this);
     result *= other;
     return result;
@@ -160,72 +184,122 @@ public:
     return result;
   }
 
+  Matrix<Data> operator*(const Matrix<Data> &matrix) const {
+    Matrix<Data> result(matrix);
+    result *= *this;
+    return result;
+  }
+
+  Data &At(size_t index) { return values_[index]; }
+
+  const Data &At(size_t index) const { return values_[index]; }
+
   size_t Size() const { return size_; }
 
-  bool IsRow() const { return is_row_; }
+  bool IsRow() const { return type_ == Type::ROW; }
 
   Matrix<Data> Product(const Matrix<Data> &matrix) const {
-    return matrix.Transpose().Product(Transpose()).Transpose();
+    if (IsRow()) {
+      Matrix<Data> result(1, matrix.ColSize());
+      for (size_t j = 0; j < result.ColSize(); ++j) {
+        for (size_t k = 0; k < matrix.RowSize(); ++k) {
+          result.At(0, j) += values_[k] * matrix.At(k, j);
+        }
+      }
+      return result;
+    }
+    Matrix<Data> result(Size(), matrix.ColSize());
+    for (size_t i = 0; i < result.RowSize(); ++i) {
+      for (size_t j = 0; j < result.ColSize(); ++j) {
+        result.At(i, j) = values_[i] * matrix.At(0, j);
+      }
+    }
+    return result;
   }
 
   Vector<Data> Transpose() const {
     Vector<Data> result(*this);
-    result.is_row_ = !is_row_;
+    result.type_ = (type_ == Type::ROW) ? Type::COLUMN : Type::ROW;
     return result;
   }
 
   void Swap(Vector<Data> &other) {
     std::swap(values_, other.values_);
     std::swap(size_, other.size_);
-    std::swap(is_row_, other.is_row_);
+    std::swap(type_, other.type_);
   }
 
 private:
   size_t size_;
   Data *values_;
-  bool is_row_;
+  Type type_;
 };
+
+template <typename Data>
+Vector<Data> operator+(const Data &data, const Vector<Data> &other) {
+  return other + data;
+}
+
+template <typename Data>
+Vector<Data> operator-(const Data &data, const Vector<Data> &other) {
+  Vector<Data> result(other.Size());
+  for (size_t i = 0; i < result.Size(); ++i) {
+    result.At(i) = data - other[i];
+  }
+  return result;
+}
+
+template <typename Data>
+Vector<Data> operator*(const Data &data, const Vector<Data> &other) {
+  return other * data;
+}
 
 template <typename Data> class Matrix {
 public:
-  Matrix(size_t row_size, size_t col_size) : values_(row_size) {
-    for (size_t i = 0; i < row_size; ++i) {
-      values_[i] = Vector<Data>(col_size);
-    }
+  Matrix(size_t row_size, size_t col_size)
+      : row_size_(row_size), col_size_(col_size),
+        values_(new Data[row_size * col_size]) {
+    std::memset(values_, 0, sizeof(Data) * row_size_ * col_size_);
   }
 
   Matrix(std::initializer_list<std::initializer_list<Data>> values)
-      : values_(values.size()) {
+      : Matrix(values.size(), values.begin()->size()) {
     size_t idx = 0;
     for (const auto &value : values) {
-      values_[idx] = value;
+      std::copy(value.begin(), value.end(), values_ + idx * col_size_);
       ++idx;
     }
   }
 
-  const Vector<Data> &operator[](size_t index) const { return values_[index]; }
+  Matrix(std::initializer_list<Vector<Data>> values)
+      : Matrix(values.size(), values.begin()->Size()) {
+    size_t idx = 0;
+    for (const auto &value : values) {
+      for (size_t i = 0; i < value.Size(); ++i) {
+        At(idx, i) = value[i];
+      }
+      ++idx;
+    }
+  }
 
-  Vector<Data> &operator[](size_t index) { return values_[index]; }
+  const Data *operator[](size_t index) const {
+    return values_ + index * col_size_;
+  }
 
   bool operator==(const Matrix<Data> &other) const {
     if (RowSize() != other.RowSize() || ColSize() != other.ColSize()) {
       return false;
-    } else {
-      for (size_t i = 0; i < RowSize(); ++i) {
-        if (!(values_[i] == other.values_[i])) {
-          return false;
-        }
-      }
     }
-    return true;
+    return std::equal(values_, values_ + row_size_ * col_size_, other.values_);
   }
 
   Matrix<Data> &operator+=(const Matrix<Data> &other) {
-    assert(values_.Size() == other.values_.Size());
-    assert(values_[0].Size() == other.values_[0].Size());
+    if (RowSize() != other.RowSize() || ColSize() != other.ColSize()) {
+      throw "Size mismatch";
+    }
     for (size_t i = 0; i < RowSize(); ++i) {
       for (size_t j = 0; j < ColSize(); ++j) {
-        values_[i][j] += other.values_[i][j];
+        At(i, j) += other.At(i, j);
       }
     }
     return *this;
@@ -240,7 +314,7 @@ public:
   Matrix<Data> &operator+=(const Data &data) {
     for (size_t i = 0; i < RowSize(); ++i) {
       for (size_t j = 0; j < ColSize(); ++j) {
-        values_[i][j] += data;
+        At(i, j) += data;
       }
     }
     return *this;
@@ -252,12 +326,42 @@ public:
     return result;
   }
 
-  Matrix<Data> &operator-=(const Matrix<Data> &other) {
-    assert(values_.Size() == other.values_.Size());
-    assert(values_[0].Size() == other.values_[0].Size());
+  Matrix<Data> &operator+=(const Vector<Data> &vector) {
+    if (vector.IsRow()) {
+      if (ColSize() != vector.Size()) {
+        throw "Size mismath";
+      }
+      for (size_t i = 0; i < RowSize(); ++i) {
+        for (size_t j = 0; j < ColSize(); ++j) {
+          At(i, j) += vector[j];
+        }
+      }
+      return *this;
+    }
+    if (RowSize() != vector.Size()) {
+      throw "Size mismatch";
+    }
     for (size_t i = 0; i < RowSize(); ++i) {
       for (size_t j = 0; j < ColSize(); ++j) {
-        values_[i][j] -= other.values_[i][j];
+        At(i, j) += vector[i];
+      }
+    }
+    return *this;
+  }
+
+  Matrix<Data> operator+(const Vector<Data> &vector) const {
+    Matrix<Data> result(*this);
+    result += vector;
+    return result;
+  }
+
+  Matrix<Data> &operator-=(const Matrix<Data> &other) {
+    if (RowSize() != other.RowSize() || ColSize() != other.ColSize()) {
+      throw "Size mismatch";
+    }
+    for (size_t i = 0; i < RowSize(); ++i) {
+      for (size_t j = 0; j < ColSize(); ++j) {
+        At(i, j) -= other.At(i, j);
       }
     }
     return *this;
@@ -272,7 +376,7 @@ public:
   Matrix<Data> &operator-=(const Data &data) {
     for (size_t i = 0; i < RowSize(); ++i) {
       for (size_t j = 0; j < ColSize(); ++j) {
-        values_[i][j] -= data;
+        At(i, j) -= data;
       }
     }
     return *this;
@@ -284,12 +388,42 @@ public:
     return result;
   }
 
-  Matrix<Data> &operator*=(const Matrix<Data> &other) {
-    assert(values_.Size() == other.values_.Size());
-    assert(values_[0].Size() == other.values_[0].Size());
+  Matrix<Data> operator-=(const Vector<Data> &vector) {
+    if (vector.IsRow()) {
+      if (ColSize() != vector.Size()) {
+        throw "Size mismath";
+      }
+      for (size_t i = 0; i < RowSize(); ++i) {
+        for (size_t j = 0; j < ColSize(); ++j) {
+          At(i, j) -= vector[j];
+        }
+      }
+      return *this;
+    }
+    if (RowSize() != vector.Size()) {
+      throw "Size mismatch";
+    }
     for (size_t i = 0; i < RowSize(); ++i) {
       for (size_t j = 0; j < ColSize(); ++j) {
-        values_[i][j] *= other.values_[i][j];
+        At(i, j) -= vector[i];
+      }
+    }
+    return *this;
+  }
+
+  Matrix<Data> operator-(const Vector<Data> &vector) const {
+    Matrix<Data> result(*this);
+    result -= vector;
+    return result;
+  }
+
+  Matrix<Data> &operator*=(const Matrix<Data> &other) {
+    if (RowSize() != other.RowSize() || ColSize() != other.ColSize()) {
+      throw "Size mismatch";
+    }
+    for (size_t i = 0; i < RowSize(); ++i) {
+      for (size_t j = 0; j < ColSize(); ++j) {
+        At(i, j) *= other.At(i, j);
       }
     }
     return *this;
@@ -304,7 +438,7 @@ public:
   Matrix<Data> &operator*=(const Data &data) {
     for (size_t i = 0; i < RowSize(); ++i) {
       for (size_t j = 0; j < ColSize(); ++j) {
-        values_[i][j] *= data;
+        At(i, j) *= data;
       }
     }
     return *this;
@@ -316,29 +450,64 @@ public:
     return result;
   }
 
-  size_t ColSize() const { return values_[0].Size(); }
+  Matrix<Data> &operator*=(const Vector<Data> &vector) {
+    if (vector.IsRow()) {
+      if (ColSize() != vector.Size()) {
+        throw "Size mismath";
+      }
+      for (size_t i = 0; i < RowSize(); ++i) {
+        for (size_t j = 0; j < ColSize(); ++j) {
+          At(i, j) *= vector[j];
+        }
+      }
+      return *this;
+    }
+    if (RowSize() != vector.Size()) {
+      throw "Size mismatch";
+    }
+    for (size_t i = 0; i < RowSize(); ++i) {
+      for (size_t j = 0; j < ColSize(); ++j) {
+        At(i, j) *= vector[i];
+      }
+    }
+    return *this;
+  }
 
-  size_t RowSize() const { return values_.Size(); }
+  Matrix<Data> operator*(const Vector<Data> &vector) const {
+    Matrix<Data> result(*this);
+    result *= vector;
+    return result;
+  }
+
+  Data &At(size_t row, size_t col) { return values_[row * col_size_ + col]; }
+
+  const Data &At(size_t row, size_t col) const {
+    return values_[row * col_size_ + col];
+  }
+
+  void Swap(size_t first_row, size_t second_row) {
+    for (size_t i = 0; i < ColSize(); ++i) {
+      std::swap(At(first_row, i), At(second_row, i));
+    }
+  }
+
+  size_t ColSize() const { return col_size_; }
+
+  size_t RowSize() const { return row_size_; }
 
   Vector<Data> GetColumn(size_t index) const {
     Vector<Data> result(RowSize());
     for (size_t i = 0; i < RowSize(); ++i) {
-      result[i] = values_[i][index];
+      result.At(i) = At(i, index);
     }
     return result;
   }
 
-  Vector<Data> GetDiagonal(bool is_main = true) const {
-    assert(values_.Size() == values_[0].Size());
-    Vector<Data> result(RowSize());
-    if (is_main) {
-      for (size_t i = 0; i < RowSize(); ++i) {
-        result[i] = values_[i][i];
-      }
-    } else {
-      for (size_t i = 0; i < RowSize(); ++i) {
-        result[i] = values_[i][ColSize() - i - 1];
-      }
+  Vector<Data> GetDiagonal() const {
+    size_t result_size = std::min(RowSize(), ColSize());
+    Vector<Data> result(result_size);
+    for (size_t i = 0; i < result_size; ++i) {
+      result.At(i) = At(i, i);
     }
     return result;
   }
@@ -347,20 +516,21 @@ public:
     Matrix<Data> result(ColSize(), RowSize());
     for (size_t i = 0; i < RowSize(); ++i) {
       for (size_t j = 0; j < ColSize(); ++j) {
-        result.values_[j][i] = values_[i][j];
+        result.At(j, i) = At(i, j);
       }
     }
     return result;
   }
 
   Matrix<Data> Product(const Matrix &matrix) const {
-    assert(values_[0].Size() == matrix.values_.Size());
+    if (ColSize() != matrix.RowSize()) {
+      throw "Size mismatch";
+    }
     Matrix<Data> result(RowSize(), matrix.ColSize());
     for (size_t i = 0; i < result.RowSize(); ++i) {
       for (size_t j = 0; j < result.ColSize(); ++j) {
-        result.values_[i][j] = 0;
         for (size_t k = 0; k < ColSize(); ++k) {
-          result.values_[i][j] += values_[i][k] * matrix.values_[k][j];
+          result.At(i, j) += At(i, k) * matrix.At(k, j);
         }
       }
     }
@@ -369,21 +539,24 @@ public:
 
   Matrix<Data> Product(const Vector<Data> &vector) const {
     if (vector.IsRow()) {
-      assert(values_[0].Size() == 1);
+      if (ColSize() != 1) {
+        throw "Size mismatch";
+      }
       Matrix<Data> result(RowSize(), vector.Size());
       for (size_t i = 0; i < RowSize(); ++i) {
         for (size_t j = 0; j < vector.Size(); ++j) {
-          result[i][j] = values_[i][0] * vector[j];
+          result.At(i, j) = At(i, 0) * vector[j];
         }
       }
       return result;
     } else {
-      assert(ColSize() == vector.Size());
+      if (ColSize() != vector.Size()) {
+        throw "Size mismatch";
+      }
       Matrix<Data> result(RowSize(), 1);
       for (size_t i = 0; i < result.RowSize(); ++i) {
-        result[i][0] = 0;
         for (size_t k = 0; k < ColSize(); ++k) {
-          result.values_[i][0] += values_[i][k] * vector[k];
+          result.At(i, 0) += At(i, k) * vector[k];
         }
       }
       return result;
@@ -391,79 +564,109 @@ public:
   }
 
   Data Det() const {
-    assert(RowSize() == ColSize());
+    if (RowSize() != ColSize()) {
+      throw "Size mismatch";
+    }
     Matrix<Data> triangle(*this);
     Data det_divisor = 1;
     for (size_t i = 0; i + 1 < RowSize(); ++i) {
-      if (triangle[i][i] == 0) {
+      if (triangle.At(i, i) == 0) {
         for (size_t k = i + 1; k < RowSize(); ++k) {
-          if (triangle[k][i] != 0) {
-            triangle[i].Swap(triangle[k]);
+          if (triangle.At(k, i) != 0) {
+            triangle.Swap(i, k);
             det_divisor = -det_divisor;
             break;
           }
         }
-        if (triangle[i][i] == 0) {
+        if (triangle.At(i, i) == 0) {
           return 0;
         }
       }
       for (size_t k = i + 1; k < RowSize(); ++k) {
-        det_divisor *= triangle[i][i];
-        Data alpha = triangle[k][i];
+        det_divisor *= triangle.At(i, i);
+        Data alpha = triangle.At(k, i);
         for (size_t j = i; j < RowSize(); ++j) {
-          triangle[k][j] =
-              triangle[i][i] * triangle[k][j] - alpha * triangle[i][j];
+          triangle.At(k, j) =
+              triangle.At(i, i) * triangle.At(k, j) - alpha * triangle.At(i, j);
         }
       }
     }
-    Data diag = triangle[0][0];
+    Data diag = triangle.At(0, 0);
     for (int i = 1; i < RowSize(); ++i) {
-      diag *= triangle[i][i];
+      diag *= triangle.At(i, i);
     }
     return diag / det_divisor;
   }
 
+  Matrix<Data> GetMinor(size_t row, size_t col) const {
+    Matrix<Data> result(RowSize() - 1, ColSize() - 1);
+    for (size_t i = 0; i < RowSize(); ++i) {
+      if (i == row) {
+        continue;
+      }
+      size_t minor_i = (i < row) ? i : i - 1;
+      for (size_t j = 0; j < ColSize(); ++j) {
+        if (j == col) {
+          continue;
+        }
+        size_t minor_j = (j < col) ? j : j - 1;
+        result.At(minor_i, minor_j) = At(i, j);
+      }
+    }
+    return result;
+  }
+
   Matrix<double> Inverse() const {
-    assert(RowSize() == ColSize());
+    if (RowSize() != ColSize()) {
+      throw "Size mismatch";
+    }
     Matrix<double> result(RowSize(), ColSize());
     for (size_t i = 0; i < RowSize(); ++i) {
       for (size_t j = 0; j < ColSize(); ++j) {
-        Matrix<double> minor(RowSize() - 1, ColSize() - 1);
-        for (size_t u = 0; u < RowSize(); ++u) {
-          if (u == i) {
-            continue;
-          }
-          size_t x = (u < i) ? u : u - 1;
-          for (size_t v = 0; v < ColSize(); ++v) {
-            if (v == j) {
-              continue;
-            }
-            size_t y = (v < j) ? v : v - 1;
-            minor[x][y] = values_[u][v];
-          }
-        }
-        result[i][j] = minor.Det();
+        result.At(i, j) = GetMinor(i, j).Det();
         if ((i + j) % 2 == 1) {
-          result[i][j] = -result[i][j];
+          result.At(i, j) = -result.At(i, j);
         }
       }
     }
-    return result.Transpose() * (1. / Det());
+    auto det = Det();
+    if (det == 0) {
+      throw "Zero determinant";
+    }
+    return result.Transpose() * (1. / det);
   }
 
   bool AllElementsLess(double abs_err) {
-    for (size_t i = 0; i < RowSize(); ++i) {
-      for (size_t j = 0; j < ColSize(); ++j) {
-        if (std::abs(values_[i][j]) > abs_err) {
-          return false;
-        }
-      }
-    }
-    return true;
+    return std::all_of(
+        values_, values_ + row_size_ * col_size_,
+        [&abs_err](const Data &data) { return std::abs(data) < abs_err; });
   }
 
 private:
-  Vector<Vector<Data>> values_;
+  size_t row_size_;
+  size_t col_size_;
+  Data *values_;
 };
+
+template <typename Data>
+Matrix<Data> operator+(const Data &data, const Matrix<Data> &other) {
+  return other + data;
+}
+
+template <typename Data>
+Matrix<Data> operator-(const Data &data, const Matrix<Data> &other) {
+  Matrix<Data> result(other.RowSize(), other.ColSize());
+  for (size_t i = 0; i < result.RowSize(); ++i) {
+    for (size_t j = 0; j < result.ColSize(); ++j) {
+      result.At(i, j) = data - other[i][j];
+    }
+  }
+  return result;
+}
+
+template <typename Data>
+Matrix<Data> operator*(const Data &data, const Matrix<Data> &other) {
+  return other * data;
+}
 
 #endif // MATRIX_CALCULATOR_H
