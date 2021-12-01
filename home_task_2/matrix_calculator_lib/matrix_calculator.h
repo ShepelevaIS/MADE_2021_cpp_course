@@ -9,7 +9,7 @@
 template <typename Data> class Matrix;
 
 template <typename Data> class Vector {
-public:  // NOLINT
+public: // NOLINT
   enum class Type { ROW, COLUMN };
 
   Vector() : size_(0), values_(nullptr), type_(Type::ROW) {}
@@ -229,7 +229,7 @@ public:  // NOLINT
     std::swap(type_, other.type_);
   }
 
-private:  // NOLINT
+private: // NOLINT
   size_t size_;
   Data *values_;
   Type type_;
@@ -255,7 +255,7 @@ Vector<Data> operator*(const Data &data, const Vector<Data> &other) {
 }
 
 template <typename Data> class Matrix {
-public:  // NOLINT
+public: // NOLINT
   Matrix(size_t row_size, size_t col_size)
       : row_size_(row_size), col_size_(col_size),
         values_(new Data[row_size * col_size]) {
@@ -280,6 +280,13 @@ public:  // NOLINT
       }
       ++idx;
     }
+  }
+
+  ~Matrix() { delete[] values_; }
+
+  Matrix(const Matrix &other) : Matrix(other.RowSize(), other.ColSize()) {
+    std::copy(other.values_, other.values_ + other.RowSize() * other.ColSize(),
+              values_);
   }
 
   const Data *operator[](size_t index) const {
@@ -642,7 +649,7 @@ public:  // NOLINT
         [&abs_err](const Data &data) { return std::abs(data) < abs_err; });
   }
 
-private:  // NOLINT
+private: // NOLINT
   size_t row_size_;
   size_t col_size_;
   Data *values_;
@@ -669,4 +676,4 @@ Matrix<Data> operator*(const Data &data, const Matrix<Data> &other) {
   return other * data;
 }
 
-#endif  // HOME_TASK_2_MATRIX_CALCULATOR_LIB_MATRIX_CALCULATOR_H_
+#endif // HOME_TASK_2_MATRIX_CALCULATOR_LIB_MATRIX_CALCULATOR_H_
