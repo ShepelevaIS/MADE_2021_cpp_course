@@ -1,9 +1,0 @@
-
-on: push
-
-jobs:
-	checks:
-		runs-on: ubuntu-20.04
-		steps: 
-			- uses: actions/checkout@home_task_1
-			- run: make check
