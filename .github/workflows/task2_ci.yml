@@ -24,7 +24,7 @@ jobs:
       - run: bash linters/bash.sh
         working-directory: home_task_2
       - name: build_with_sanitizers
-        run: g++ -fsanitize=address,undefined -fno-sanitize-recover=all -fsanitize-undefined-trap-on-error ./home_task_2/main.cc --std=c++17
+        run: g++ -fsanitize=address,undefined -fno-sanitize-recover=all -fsanitize-undefined-trap-on-error ./home_task_2/main.cc -Ihome_task_2/matrix_calculator_lib --std=c++17
       - name: run_built
         run: ./a.out
       - run: rm -rf build
