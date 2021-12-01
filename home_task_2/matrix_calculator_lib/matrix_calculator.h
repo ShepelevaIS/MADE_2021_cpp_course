@@ -676,4 +676,4 @@ Matrix<Data> operator*(const Data &data, const Matrix<Data> &other) {
   return other * data;
 }
 
-#endif // HOME_TASK_2_MATRIX_CALCULATOR_LIB_MATRIX_CALCULATOR_H_
+#endif  // HOME_TASK_2_MATRIX_CALCULATOR_LIB_MATRIX_CALCULATOR_H_
