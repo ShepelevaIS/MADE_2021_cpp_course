@@ -52,7 +52,7 @@ TEST(VectorTest, VectorEqual) {
 TEST(VectorTest, VectorAtConst) {
   const Vector<float> vector = {1, 2, 3};
   float expected = 1;
-  EXPECT_EQ(1, vector.At(0));
+  EXPECT_EQ(expected, vector.At(0));
 }
 
 TEST(VectorTest, VectorTranspose) {

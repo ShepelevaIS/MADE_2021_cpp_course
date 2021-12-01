@@ -1,5 +1,5 @@
-#ifndef MATRIX_CALCULATOR_H
-#define MATRIX_CALCULATOR_H
+#ifndef HOME_TASK_2_MATRIX_CALCULATOR_LIB_MATRIX_CALCULATOR_H_
+#define HOME_TASK_2_MATRIX_CALCULATOR_LIB_MATRIX_CALCULATOR_H_
 
 #include <algorithm>
 #include <cassert>
@@ -9,12 +9,12 @@
 template <typename Data> class Matrix;
 
 template <typename Data> class Vector {
-public:
+public:  // NOLINT
   enum class Type { ROW, COLUMN };
 
   Vector() : size_(0), values_(nullptr), type_(Type::ROW) {}
 
-  Vector(size_t size, Type type = Type::ROW)
+  explicit Vector(size_t size, Type type = Type::ROW)
       : size_(size), values_(size ? new Data[size]{} : nullptr), type_(type) {
     std::memset(values_, 0, sizeof(Data) * size_);
   }
@@ -39,7 +39,7 @@ public:
     if (values_) {
       delete[] values_;
     }
-  };
+  }
 
   Vector<Data> &operator=(const Vector<Data> &other) {
     if (this != &other) {
@@ -229,7 +229,7 @@ public:
     std::swap(type_, other.type_);
   }
 
-private:
+private:  // NOLINT
   size_t size_;
   Data *values_;
   Type type_;
@@ -255,7 +255,7 @@ Vector<Data> operator*(const Data &data, const Vector<Data> &other) {
 }
 
 template <typename Data> class Matrix {
-public:
+public:  // NOLINT
   Matrix(size_t row_size, size_t col_size)
       : row_size_(row_size), col_size_(col_size),
         values_(new Data[row_size * col_size]) {
@@ -642,7 +642,7 @@ public:
         [&abs_err](const Data &data) { return std::abs(data) < abs_err; });
   }
 
-private:
+private:  // NOLINT
   size_t row_size_;
   size_t col_size_;
   Data *values_;
@@ -669,4 +669,4 @@ Matrix<Data> operator*(const Data &data, const Matrix<Data> &other) {
   return other * data;
 }
 
-#endif // MATRIX_CALCULATOR_H
+#endif  // HOME_TASK_2_MATRIX_CALCULATOR_LIB_MATRIX_CALCULATOR_H_

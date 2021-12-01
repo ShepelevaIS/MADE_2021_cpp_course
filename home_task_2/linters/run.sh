@@ -8,12 +8,12 @@ function print_header() {
 }
 
 print_header "RUN cppcheck"
-cppcheck . --enable=all --inconclusive --error-exitcode=1 -I ./home_task_2/matrix_calculator_lib
+cppcheck ./home_task_2/main.cc --enable=all --inconclusive --error-exitcode=1 -I ./home_task_2/matrix_calculator_lib
 
 print_header "RUN clang-tidy"
-# clang-tidy ./home_task_2/matrix_calculator_lib/* -- -I home_task_2/matrix_calculator_lib
+clang-tidy ./home_task_2/main.cc -- -I home_task_2/matrix_calculator_lib
 
 print_header "RUN cpplint.py"
-python3 /home_task_2/linters/cpplint/cpplint.py --extensions=c home_task_2/matrix_calculator_lib/* home_task_2/tests/*
+cd ./home_task_2/ && python3 linters/cpplint/cpplint.py --extensions=c matrix_calculator_lib/* tests/*
 
 print_header "SUCCESS"
