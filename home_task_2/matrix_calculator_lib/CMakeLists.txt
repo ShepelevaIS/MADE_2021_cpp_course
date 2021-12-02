@@ -1,0 +1,12 @@
+cmake_minimum_required(VERSION 3.0.0)
+project(matrix_calculator_lib)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-fprofile-arcs -ftest-coverage -fPIC -O0")
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -Wpedantic -Wextra -Werror")
+
+file(GLOB INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library(${PROJECT_NAME} INTERFACE)
+set(CALCULATOR_LIB_LIBRARIES ${PROJECT_NAME} PARENT_SCOPE)
+set(CALCULATOR_LIB_INCLUDE_DIRS ${INCLUDE_DIRS} PARENT_SCOPE)
