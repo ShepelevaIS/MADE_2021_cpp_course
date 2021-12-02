@@ -14,6 +14,6 @@ print_header "RUN clang-tidy"
 clang-tidy ./main.cc -- -I matrix_calculator_lib
 
 print_header "RUN cpplint.py"
-python3 linters/cpplint/cpplint.py --extensions=c matrix_calculator_lib/* tests/*
+python3 -m cpplint matrix_calculator_lib/* tests/* main.cc
 
 print_header "SUCCESS"

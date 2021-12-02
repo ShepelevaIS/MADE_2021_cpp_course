@@ -6,10 +6,12 @@
 #include <cstring>
 #include <optional>
 
-template <typename Data> class Matrix;
+template <typename Data>
+class Matrix;
 
-template <typename Data> class Vector {
-public: // NOLINT
+template <typename Data>
+class Vector {
+ public:
   enum class Type { ROW, COLUMN };
 
   Vector() : size_(0), values_(nullptr), type_(Type::ROW) {}
@@ -229,7 +231,7 @@ public: // NOLINT
     std::swap(type_, other.type_);
   }
 
-private: // NOLINT
+ private:
   size_t size_;
   Data *values_;
   Type type_;
@@ -254,10 +256,12 @@ Vector<Data> operator*(const Data &data, const Vector<Data> &other) {
   return other * data;
 }
 
-template <typename Data> class Matrix {
-public: // NOLINT
+template <typename Data>
+class Matrix {
+ public:
   Matrix(size_t row_size, size_t col_size)
-      : row_size_(row_size), col_size_(col_size),
+      : row_size_(row_size),
+        col_size_(col_size),
         values_(new Data[row_size * col_size]) {
     std::memset(values_, 0, sizeof(Data) * row_size_ * col_size_);
   }
@@ -649,7 +653,7 @@ public: // NOLINT
         [&abs_err](const Data &data) { return std::abs(data) < abs_err; });
   }
 
-private: // NOLINT
+ private:
   size_t row_size_;
   size_t col_size_;
   Data *values_;

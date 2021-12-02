@@ -1,5 +1,6 @@
-#include "matrix_calculator.h"
 #include <gtest/gtest.h>
+#include <matrix_calculator.h>
+
 #include <vector>
 
 TEST(VectorTest, EmptyVector) {
