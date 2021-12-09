@@ -39,13 +39,9 @@ jobs:
         working-directory: home_task_4/build
       - run: cmake --build .
         working-directory: home_task_4/build
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v2
-        with:
-          path: main.out
-      - run: countif_sequential
+      - run: ./countif_sequential
         working-directory: home_task_4/build
-      - run: countif_parallel
+      - run: ./countif_parallel
         working-directory: home_task_4/build
       # - name: test_with_valgrind
       #   run: valgrind --tool=memcheck --leak-check=yes ./tests/test_matrix_calculator
