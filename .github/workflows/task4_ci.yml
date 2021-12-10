@@ -35,8 +35,8 @@ jobs:
         working-directory: home_task_4/build
       - run: cmake --build .
         working-directory: home_task_4/build
-      - run: run_tests.sh
-        working-directory: home_task_4/stress_test
+      - run: stress_test/run_tests.sh
+        working-directory: home_task_4
       # - name: test_with_valgrind
       #   run: valgrind --tool=memcheck --leak-check=yes ./tests/test_matrix_calculator
       #   working-directory: home_task_4/build
