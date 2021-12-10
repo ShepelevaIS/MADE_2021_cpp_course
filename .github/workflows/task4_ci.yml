@@ -31,18 +31,12 @@ jobs:
         working-directory: home_task_4
       - run: mkdir build
         working-directory: home_task_4
-      - run: cmake -DUSE_SEQUENTIAL=ON ..
+      - run: cmake -DSEQUENTIAL=ON -DPARALLEL=ON -DGENERATE=ON ..
         working-directory: home_task_4/build
       - run: cmake --build .
         working-directory: home_task_4/build
-      - run: cmake -DUSE_SEQUENTIAL=OFF ..
-        working-directory: home_task_4/build
-      - run: cmake --build .
-        working-directory: home_task_4/build
-      - run: ./countif_sequential
-        working-directory: home_task_4/build
-      - run: ./countif_parallel
-        working-directory: home_task_4/build
+      - run: run_tests.sh
+        working-directory: home_task_4/stress_test
       # - name: test_with_valgrind
       #   run: valgrind --tool=memcheck --leak-check=yes ./tests/test_matrix_calculator
       #   working-directory: home_task_4/build
