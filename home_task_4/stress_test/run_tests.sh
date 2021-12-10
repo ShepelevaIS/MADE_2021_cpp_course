@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 file1=sequential.txt
 file2=parallel.txt
 output=stress_test_output
